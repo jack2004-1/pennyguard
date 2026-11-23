@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pennyguard.local/req-schema.json",
+  "title": "PennyGuard Requirements Registry Schema",
+  "description": "JSON Schema used by the CI schema gate (GOV-001) to validate requirements.yaml.",
+  "type": "object",
+  "required": ["meta", "requirements"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["app_name", "purpose", "author", "student_id", "group", "last_updated"],
+      "additionalProperties": true,
+      "properties": {
+        "app_name": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "author": { "type": "string", "minLength": 1 },
+        "student_id": { "type": "string", "pattern": "^[0-9]{8}$" },
+        "group": { "type": "string" },
+        "last_updated": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "source_note": { "type": "string" }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/requirement" }
+    }
+  },
+  "definitions": {
+    "requirement": {
+      "type": "object",
+      "required": ["id", "type", "statement", "fit_criterion", "priority"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(FR|INV|QA|PERF|COST|GOV|SEC)-[0-9]{3}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["functional", "invariant", "quality", "performance", "cost", "governance", "security"]
+        },
+        "statement": { "type": "string", "minLength": 1 },
+        "fit_criterion": { "$ref": "#/definitions/fitCriterion" },
+        "priority": {
+          "type": "string",
+          "enum": ["Must", "Should", "Could", "Won't"]
+        },
+        "tradeoff": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "fitCriterion": {
+      "type": "object",
+      "required": ["metric", "threshold", "verification"],
+      "additionalProperties": false,
+      "properties": {
+        "metric": { "type": "string", "minLength": 1 },
+        "threshold": { "type": "string", "minLength": 1 },
+        "verification": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

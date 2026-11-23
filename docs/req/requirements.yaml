@@ -1,0 +1,380 @@
+# =============================================================================
+# PennyGuard — Machine-Readable Requirements Registry (D1)
+# Course: CS5351 Agentic Software Engineering, 2026/27 Sem A
+# Student: Yiyang BU (卜毅扬), Student ID 60392800, Group 43 (solo)
+#
+# Every requirement carries: id, type, statement, fit_criterion (machine-checkable),
+# priority (MoSCoW), and an explicit tradeoff where relevant.
+# Types: functional | invariant | quality | performance | cost | governance | security
+# Invariants are zero-tolerance rules whose fit criterion must fail loudly on violation.
+# =============================================================================
+
+meta:
+  app_name: PennyGuard
+  purpose: >-
+    A local command-line personal-expense tool that uses an AI component to suggest
+    budget categories from free-text transaction descriptions, while deterministic
+    guardrail code constrains every AI output. Budget over/under-spend decisions are
+    made only by deterministic policy code; the AI can never raise a budget or mark
+    an over-budget transaction as compliant.
+  author: Yiyang BU
+  student_id: "60392800"
+  group: "43"
+  last_updated: "2026-11-23"
+  source_note: >-
+    Requirements were derived from the project specification (CS5351 Project Requirement
+    Sheet, Sections 1 and 3). No requirement is inherited from any prior group repository;
+    this project is designed from scratch.
+
+requirements:
+
+  # ---------------------------------------------------------------------------
+  # Functional
+  # ---------------------------------------------------------------------------
+  - id: FR-001
+    type: functional
+    statement: >-
+      The system accepts a single transaction (free-text description, numeric amount,
+      ISO date) and produces a structured Transaction record.
+    fit_criterion:
+      metric: structured_record_valid
+      threshold: >-
+        For every valid input, the produced record has a non-empty id, the original
+        description, a non-negative Decimal amount, and a parseable ISO date.
+      verification: test/offline/test_models.py::test_transaction_record_valid
+    priority: Must
+    tradeoff: We keep the input schema minimal (description/amount/date) to stay offline-testable;
+      richer import formats (CSV, bank feed) are deferred to a later sprint.
+
+  - id: FR-002
+    type: functional
+    statement: >-
+      The system categorizes a transaction description into a budget category and
+      produces a CategorizationResult carrying the chosen category and its source.
+    fit_criterion:
+      metric: categorization_result_emitted
+      threshold: >-
+        Every processed transaction yields a CategorizationResult whose category is a
+        member of the fixed category whitelist and whose source is one of llm, rule, fallback.
+      verification: test/offline/test_categorizer.py::test_result_category_in_whitelist
+    priority: Must
+    tradeoff: A single-label categorization is chosen over multi-label tagging to keep the
+      guardrail whitelist check simple and deterministic.
+
+  - id: FR-003
+    type: functional
+    statement: >-
+      When an LLM endpoint and API key are configured, the LLM categorizer is used;
+      otherwise the deterministic rule-based fallback categorizer is used automatically.
+    fit_criterion:
+      metric: fallback_selected_without_key
+      threshold: >-
+        In an environment without an API key, classification is produced by the rule-based
+        categorizer and no outbound network request is attempted.
+      verification: test/offline/test_categorizer.py::test_no_key_uses_rule_classifier_no_network
+    priority: Must
+    tradeoff: LLM usage is opt-in via configuration; the offline deterministic path is the
+      default so CI and grading never depend on a live model or secret.
+
+  - id: FR-004
+    type: functional
+    statement: >-
+      The system keeps a monthly per-category budget, accumulates spending per category,
+      and reports whether each category is within or over budget.
+    fit_criterion:
+      metric: over_budget_flag_correct
+      threshold: >-
+        When cumulative spending for a category exceeds its configured budget, the status
+        is over_budget; otherwise within_budget. The comparison uses exact decimal arithmetic.
+      verification: test/offline/test_budget.py::test_over_budget_flag_exact
+    priority: Must
+    tradeoff: Budgets are monthly and per-category; rolling or shared budgets are out of scope.
+
+  - id: FR-005
+    type: functional
+    statement: >-
+      The ledger (transactions and budgets) survives across sessions and interruptions by
+      persisting to a local JSON file and being readable back on restart.
+    fit_criterion:
+      metric: reload_roundtrip_consistent
+      threshold: >-
+        After writing the ledger to disk and reloading it from the same path, the transaction
+        set and budget values are identical to the pre-write state.
+      verification: test/offline/test_ledger.py::test_roundtrip_consistent
+    priority: Must
+    tradeoff: A single local JSON file is used instead of a database to keep the baseline small
+      and fully inspectable; concurrency control is out of scope for this solo project.
+
+  - id: FR-006
+    type: functional
+    statement: >-
+      The system replays a fixed evaluation set and reports faithfulness, relevance, and
+      safety-escape counts for the categorization and guardrail pipeline.
+    fit_criterion:
+      metric: eval_report_generated
+      threshold: >-
+        Running the evaluation entry point produces a report containing faithfulness,
+        relevance, and a safety_escape count that is zero on the offline fixture set.
+      verification: test/offline/test_eval.py::test_eval_report_zero_safety_escape
+    priority: Must
+    tradeoff: The fixture set is fixed and small to make the semantic evaluation gate
+      deterministic and repeatable; a larger human-annotated corpus is future work.
+
+  - id: FR-007
+    type: functional
+    statement: >-
+      A command-line interface exposes add, list, status, and eval sub-commands.
+    fit_criterion:
+      metric: cli_commands_runnable
+      threshold: >-
+        Each sub-command executes and returns a structured result without raising; unknown
+        commands produce a documented error exit code.
+      verification: test/offline/test_app_cli.py::test_subcommands_run
+    priority: Should
+    tradeoff: A CLI is chosen over a GUI to satisfy offline/headless grading and CI execution.
+
+  # ---------------------------------------------------------------------------
+  # Invariants (zero tolerance)
+  # ---------------------------------------------------------------------------
+  - id: INV-001
+    type: invariant
+    statement: >-
+      Every assigned category must belong to the fixed category whitelist. An AI-produced
+      category outside the whitelist must be rejected and the transaction must fall back to
+      the reserved 'other' category.
+    fit_criterion:
+      metric: whitelist_violation_blocked
+      threshold: >-
+        No processed record may carry a category absent from the whitelist; injecting an
+        out-of-whitelist model output must be rejected by the guardrail and replaced with
+        'other', and a test that forces this case must fail if the guardrail does not block it.
+      verification: test/offline/test_guardrail.py::test_out_of_whitelist_rejected
+    priority: Must
+    tradeoff: The whitelist is intentionally closed; adding a category is a configuration/
+      architecture change, not an AI free-form choice.
+
+  - id: INV-002
+    type: invariant
+    statement: >-
+      Amount conservation: the AI/categorizer must never rewrite the transaction amount.
+      The recorded amount is taken only from the input transaction field.
+    fit_criterion:
+      metric: amount_unchanged_by_ai
+      threshold: >-
+        The amount stored on the record equals the input amount byte-for-byte after decimal
+        normalization; any model-supplied amount field is ignored by the deterministic layer.
+      verification: test/offline/test_guardrail.py::test_amount_conservation
+    priority: Must
+    tradeoff: The model is never asked to extract amounts from free text; amount parsing is
+        handled by deterministic code so conservation is auditable.
+
+  - id: INV-003
+    type: invariant
+    statement: >-
+      Over/under-budget determination may only be made by the deterministic BudgetPolicy.
+      The AI may neither raise a budget threshold nor mark an over-budget transaction as compliant.
+    fit_criterion:
+      metric: budget_decision_deterministic
+      threshold: >-
+        The compliance decision in every record originates from BudgetPolicy evaluation;
+        there is no code path by which model output changes a budget limit or flips an
+        over-budget flag to compliant.
+      verification: test/offline/test_budget.py::test_ai_cannot_flip_compliance
+    priority: Must
+    tradeoff: The AI is confined to suggestion; authoritative budget decisions live in a
+      separately reviewable deterministic module.
+
+  - id: INV-004
+    type: invariant
+    statement: >-
+      Every AI response must pass a deterministic structural validation (required fields
+      present, correct types, legal enum values). An invalid response is treated as a failed
+      model call and degraded to fallback.
+    fit_criterion:
+      metric: malformed_llm_response_degraded
+      threshold: >-
+        A model response missing fields, with wrong types, or with illegal enum values must be
+        rejected by the schema/structural validator and routed to the fallback categorizer.
+      verification: test/offline/test_guardrail.py::test_malformed_response_degraded
+    priority: Must
+    tradeoff: Strict structural validation trades some model flexibility for a guaranteed
+      enforceable boundary.
+
+  - id: INV-005
+    type: invariant
+    statement: >-
+      When the LLM is unavailable (no key, timeout, transport error, or invalid payload), the
+      system must degrade to the fallback categorizer without crashing and must not leak the
+      API key into logs, the ledger, or prompts.
+    fit_criterion:
+      metric: graceful_degradation_no_leak
+      threshold: >-
+        For each LLM failure mode, the system returns a fallback categorization, exits the
+        pipeline cleanly, and no secret value appears in any persisted or logged string.
+      verification: test/offline/test_degradation.py::test_llm_failure_modes_degrade_cleanly
+    priority: Must
+    tradeoff: Availability under model failure is prioritized over always using the model.
+
+  - id: INV-006
+    type: invariant
+    statement: >-
+      Budget limits may be modified only through the user configuration or an explicit
+      user command; the AI-facing layer exposes no write interface that raises a budget.
+    fit_criterion:
+      metric: no_ai_budget_write_path
+      threshold: >-
+        The categorizer/model-facing package has no method that mutates budget limits; a
+        structural/API-surface check confirms no such write path is exported.
+      verification: test/offline/test_guardrail.py::test_no_ai_budget_write_surface
+    priority: Must
+    tradeoff: Strong separation between advisory model layer and authoritative ledger layer.
+
+  # ---------------------------------------------------------------------------
+  # Quality attributes
+  # ---------------------------------------------------------------------------
+  - id: QA-001
+    type: quality
+    statement: >-
+      The offline pipeline is deterministic: repeated replays of the same fixture
+      set produce identical guardrail and budget decisions.
+    fit_criterion:
+      metric: repeat_run_diff_empty
+      threshold: Two consecutive offline replay runs have an empty diff in decisions and statuses.
+      verification: test/offline/test_eval.py::test_replay_deterministic
+    priority: Must
+    tradeoff: Non-deterministic model sampling is disabled in the evaluated offline path.
+
+  - id: QA-002
+    type: quality
+    statement: Every module and function references the requirement/invariant IDs it implements,
+      so behavior is traceable to the registry.
+    fit_criterion:
+      metric: trace_annotations_present
+      threshold: Each source module header cites its implemented requirement/invariant IDs;
+        the trace matrix maps every requirement to its module and test.
+      verification: docs/architecture/trace-matrix.md
+    priority: Should
+    tradeoff: Lightweight docstring-level traceability is used instead of a heavy annotation framework.
+
+  - id: QA-003
+    type: quality
+    statement: Every AI categorization records its source (llm/rule/fallback) and any guardrail
+      rejection reason, for auditability.
+    fit_criterion:
+      metric: provenance_recorded
+      threshold: Each result exposes a provenance field and a guardrail decision record; rejected
+        model outputs carry a reason code.
+      verification: test/offline/test_guardrail.py::test_provenance_and_reason_recorded
+    priority: Should
+    tradeoff: Provenance metadata is stored alongside records to support audit and bug triage.
+
+  # ---------------------------------------------------------------------------
+  # Performance
+  # ---------------------------------------------------------------------------
+  - id: PERF-001
+    type: performance
+    statement: In offline mode (no network), a single transaction's categorization plus
+      guardrail decision completes within a bounded latency.
+    fit_criterion:
+      metric: offline_p95_latency_ms
+      threshold: p95 latency over 200 fixture transactions < 50 ms per transaction.
+      verification: test/offline/test_perf.py::test_offline_p95_under_threshold
+    priority: Should
+    tradeoff: A small in-memory rule table is used; heavier retrieval is not needed at this scale.
+
+  - id: PERF-002
+    type: performance
+    statement: An LLM call has a hard timeout; on timeout the system degrades to fallback.
+    fit_criterion:
+      metric: llm_timeout_budget_s
+      threshold: LLM request timeout <= 8 seconds; exceeding it triggers degradation.
+      verification: test/offline/test_degradation.py::test_llm_timeout_degrades
+    priority: Should
+    tradeoff: A conservative timeout protects responsiveness at the cost of occasional fallback.
+
+  # ---------------------------------------------------------------------------
+  # Cost
+  # ---------------------------------------------------------------------------
+  - id: COST-001
+    type: cost
+    statement: The prompt assembled for one transaction is capped by a token budget; content
+      beyond the threshold is compacted before assembly.
+    fit_criterion:
+      metric: assembled_prompt_within_budget
+      threshold: Assembled prompt size <= 600 token-equivalent units; critical constraints are
+        re-injected after compaction.
+      verification: test/offline/test_prompt_assembly.py::test_prompt_within_budget
+    priority: Should
+    tradeoff: History is truncated rather than sent in full to control per-call LLM cost.
+
+  - id: COST-002
+    type: cost
+    statement: When no LLM is configured, LLM invocation cost is zero.
+    fit_criterion:
+      metric: zero_invocations_without_config
+      threshold: No LLM client is constructed and no call is made in default configuration.
+      verification: test/offline/test_categorizer.py::test_no_client_without_config
+    priority: Must
+    tradeoff: Default offline-first posture minimizes spend and secret exposure.
+
+  # ---------------------------------------------------------------------------
+  # Governance
+  # ---------------------------------------------------------------------------
+  - id: GOV-001
+    type: governance
+    statement: The requirements registry validates against its JSON schema in CI (schema gate).
+    fit_criterion:
+      metric: registry_schema_valid
+      threshold: requirements.yaml parses and validates against req-schema.json with no errors.
+      verification: .github/workflows/ci.yml::schema-gate
+    priority: Must
+    tradeoff: A strict registry schema catches malformed requirement entries before they reach design.
+
+  - id: GOV-002
+    type: governance
+    statement: Any change to code or prompts must update the AI-use log; otherwise the PR is blocked.
+    fit_criterion:
+      metric: ai_use_log_up_to_date
+      threshold: A PR touching src/ or prompts/ without an ai-use-log.yaml change fails the AI-use log gate.
+      verification: .github/workflows/ci.yml::ai-use-log-gate
+    priority: Must
+    tradeoff: The log gate trades a small process overhead for auditable AI usage.
+
+  - id: GOV-003
+    type: governance
+    statement: Changes to safety-critical paths require an accompanying architecture decision
+      and human approval.
+    fit_criterion:
+      metric: safety_change_reviewed
+      threshold: Guardrail/budget/permission modules cannot change without an ADR reference and
+        an approving review memo.
+      verification: docs/review-memo.md
+    priority: Must
+    tradeoff: Human review on critical paths slows those changes in exchange for controlled risk.
+
+  # ---------------------------------------------------------------------------
+  # Security
+  # ---------------------------------------------------------------------------
+  - id: SEC-001
+    type: security
+    statement: The API key is read only from an environment variable; it must never be written
+      to the repository, ledger, prompts, or logs, and must be redacted in any output string.
+    fit_criterion:
+      metric: secret_never_persisted
+      threshold: No persisted file or logged string contains the configured secret value; the
+        redaction routine masks any occurrence of the key.
+      verification: test/offline/test_security.py::test_secret_not_persisted_or_leaked
+    priority: Must
+    tradeoff: Secrets are environment-scoped; no secret is bundled in the deliverable.
+
+  - id: SEC-002
+    type: security
+    statement: Model output is advisory only. The model cannot invoke privileged actions
+      (writing budgets, deleting records, shell commands); it cannot drive tool calls directly.
+    fit_criterion:
+      metric: model_output_not_executed
+      threshold: Model text is parsed into a constrained candidate object only; no model-originated
+        string is passed to an evaluator, shell, or mutating ledger API.
+      verification: test/offline/test_security.py::test_model_output_not_executed
+    priority: Must
+    tradeoff: A narrow parsed-object interface limits capability to the intended categorization task.

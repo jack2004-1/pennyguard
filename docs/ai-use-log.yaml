@@ -1,0 +1,134 @@
+# =============================================================================
+# AI-Use Log (D1, gate object for GOV-002)
+# Every change to code or prompts MUST append an entry here; otherwise the
+# AI-use log gate (CI gate 6) blocks the PR.
+# Columns: what AI was used for, which model/tool, what the human decided,
+# and where the human intervened or redirected.
+# =============================================================================
+
+meta:
+  app_name: PennyGuard
+  student: Yiyang BU
+  student_id: "60392800"
+  group: 43
+  maintained_by: human
+  policy: >-
+    Entries are appended chronologically. `actor` is either human or agent.
+    `intervention` records where the human interrupted, redirected, approved,
+    or rejected agent output. Secrets/API keys are never recorded here.
+
+agents_available:
+  coding_agent:
+    name: OpenCode (local IDE extension)
+    candidate_models:
+      - deepseek-chat (OpenAI-compatible endpoint; optional runtime model)
+    note: >-
+      The coding agent is the tool that writes source under human supervision (D3/D5).
+      It is distinct from the optional runtime LLM embedded in the product.
+
+entries:
+  - id: AU-001
+    timestamp: "2026-11-23T20:10:00+08:00"
+    actor: human
+    tool: planning-session
+    model: none
+    task: >-
+      Confirmed solo submission for Group 43, selected the from-scratch topic
+      (AI-assisted expense categorization with deterministic budget guardrails),
+      and fixed the isolation rule: no code, naming, or docs reused from any prior group.
+    files_touched:
+      - docs/req/requirements.yaml
+    intervention: Human chose the topic and safety boundary; no agent-generated design accepted yet.
+    decision: approved
+    notes: Topic kept small, offline-testable, with a clear AI advisory / deterministic authority split.
+
+  - id: AU-002
+    timestamp: "2026-11-23T20:30:00+08:00"
+    actor: agent
+    tool: OpenCode-assisted drafting
+    model: deepseek-chat (draft only; reviewed by human)
+    task: >-
+      Drafted the initial requirement registry structure and invariant list under
+      human-supplied IDs and thresholds.
+    files_touched:
+      - docs/req/requirements.yaml
+      - docs/req/req-schema.json
+    intervention: >-
+      Human reviewed every fit criterion for machine-checkability, rejected any
+      vague threshold, and verified each invariant maps to a failing test.
+    decision: approved-after-revision
+    notes: Requirement IDs, whitelist categories, and thresholds were fixed by the human;
+      the agent did not introduce extra requirements.
+
+  - id: AU-003
+    timestamp: "2026-11-23T21:00:00+08:00"
+    actor: agent
+    tool: OpenCode-assisted drafting
+    model: deepseek-chat (draft only; reviewed by human)
+    task: >-
+      Produced architecture artifacts: blueprint, ADR-001, invariant register, trace matrix,
+      memory/state design, permission model, runtime policy catalog, candidate evaluation table,
+      option ledger, evaluation logbook, and risk list.
+    files_touched:
+      - architecture-blueprint.md
+      - docs/architecture/
+    intervention: >-
+      Human redirected the AI context assembly to keep standing constraints and the whitelist
+      exempt from truncation and re-injected after compaction; fixed the 600-unit cap, 480-unit
+      threshold, and 8 s timeout; confirmed frozen safety-critical paths.
+    decision: approved-after-revision
+    notes: Alternatives were scored against course drivers; guarded hybrid selected.
+
+  - id: AU-004
+    timestamp: "2026-11-23T21:40:00+08:00"
+    actor: agent
+    tool: OpenCode-assisted implementation
+    model: deepseek-chat (code draft; reviewed by human)
+    task: >-
+      Implemented source modules: models, config, categorizer interface/rule/LLM, guardrail,
+      budget, ledger, prompt assembly, eval, and app/CLI behind the approved plan.
+    files_touched:
+      - src/pennyguard/
+    intervention: >-
+      Human held the plan gate before code; required an injectable LLM client seam and no LLM
+      client in default configuration; reviewed the advisory/authority boundary and secret handling.
+    decision: approved-after-revision
+    notes: Source follows one-element-one-module mapping; IDs cited in module headers.
+
+  - id: AU-005
+    timestamp: "2026-11-23T22:10:00+08:00"
+    actor: agent
+    tool: OpenCode-assisted implementation
+    model: deepseek-chat (test draft; reviewed by human)
+    task: >-
+      Wrote offline deterministic tests and the skipped live test; ran the suite and fixed
+      collection and behavioral failures (ledger bracket balance, exception-to-fallback
+      conversion, CLI SystemExit contract).
+    files_touched:
+      - test/offline/
+      - test/live/
+      - src/pennyguard/ledger.py
+      - src/pennyguard/categorizer/llm.py
+    intervention: >-
+      Human interrupted on the syntax error, required a uniform degradation path for injected and
+      self-built categorizers, and verified each invariant has a failing-test counterpart and zero
+      regressions.
+    decision: approved-after-revision
+    notes: Final offline run 37 passed, 1 live skipped; eval replay zero safety escapes.
+
+  - id: AU-006
+    timestamp: "2026-11-23T22:30:00+08:00"
+    actor: agent
+    tool: OpenCode-assisted drafting
+    model: deepseek-chat (draft only; reviewed by human)
+    task: >-
+      Versioned runtime prompts (v1.0, v1.1), six-gate CI workflow, structural/eval/test-approval/
+      ai-use-log gate scripts, and supporting project files.
+    files_touched:
+      - prompts/
+      - .github/workflows/ci.yml
+      - scripts/
+    intervention: Human confirmed the semantic gate replays the fixed set with zero escapes before a
+      prompt/model change reaches the default path; reviewed branch-protection rules for critical paths.
+    decision: approved
+    notes: No secret or endpoint key was committed; live tests skip without LLM_API_KEY.
