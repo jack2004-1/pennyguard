@@ -1,0 +1,66 @@
+name: PennyGuard CI — six blocking gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  blocking-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Gate 3 — Schema gate: requirements registry validates against its JSON schema.
+      - name: Gate 3 — Requirements schema validation
+        run: python scripts/validate_requirements.py
+
+      # Gate 2 — Static analysis: compile/import, dependency check, structural boundary.
+      - name: Gate 2 — Static analysis (compile + deps + boundary)
+        run: |
+          python -m compileall -q src
+          pip check
+          python scripts/check_structural.py
+
+      # Gate 1 — Test approval (structural counterpart): each business module has a paired test.
+      # The human-approved test plan is recorded in docs/review-memo.md before implementation.
+      - name: Gate 1 — Test approval pairing check
+        run: python scripts/check_test_approval.py
+
+      # Gate 5 — Regression: full historical offline suite; any regression blocks merge.
+      - name: Gate 5 — Regression suite (offline, deterministic)
+        run: python -m pytest test/offline/ -v
+
+      # Gate 4 — Semantic evaluation: fixed-set replay meets thresholds, zero safety escapes.
+      - name: Gate 4 — Semantic evaluation replay
+        run: python scripts/check_eval_gate.py
+
+      # Gate 6 — AI-use log: code/prompt change must accompany an ai-use-log update.
+      - name: Gate 6 — AI-use log freshness
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            CHANGED=$(git diff --name-only HEAD~1...HEAD 2>/dev/null || echo "")
+          fi
+          python scripts/check_aiuse_log.py $CHANGED
+
+# Branch protection (repository settings, enforced alongside this pipeline):
+# - Require CI to pass before merging.
+# - Changes to safety-critical paths (src/pennyguard/guardrail.py, src/pennyguard/budget.py,
+#   .opencode/**, .agent/**) require human review and an accompanying ADR/review memo (GOV-003).
+# - Live tests (test/live/) are not required to pass without a configured API key; they skip.
