@@ -561,6 +561,12 @@ require human review with an accompanying architecture decision or review memo (
 documents the gate design and the commands to run offline tests, live tests, and the full suite locally,
 so a reviewer can reproduce the CI evidence on a clean machine.
 
+Note on platform availability: branch-protection settings on GitHub are a Pro feature and are not
+offered for a free-account private repository; this repository is kept private. The protection policy is
+therefore enforced in the two layers available here: the six blocking gates run as required GitHub
+Actions checks on every push to `main`, and the governance rules freeze the safety-critical paths behind
+an ADR plus human approval (GOV-003). No administrator bypass is configured.
+
 ## 11. Process quality evidence
 
 ### 11.1 Requirement volatility
