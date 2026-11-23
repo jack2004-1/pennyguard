@@ -561,11 +561,13 @@ require human review with an accompanying architecture decision or review memo (
 documents the gate design and the commands to run offline tests, live tests, and the full suite locally,
 so a reviewer can reproduce the CI evidence on a clean machine.
 
-Note on platform availability: branch-protection settings on GitHub are a Pro feature and are not
-offered for a free-account private repository; this repository is kept private. The protection policy is
-therefore enforced in the two layers available here: the six blocking gates run as required GitHub
-Actions checks on every push to `main`, and the governance rules freeze the safety-critical paths behind
-an ADR plus human approval (GOV-003). No administrator bypass is configured.
+Branch protection is enforced on the `main` branch through a classic protection rule: the
+`blocking-gates` GitHub Actions check must pass before merging, and force pushes and branch deletion
+are disallowed. On GitHub Free, branch protection is available for public repositories, so the
+repository is published publicly; no secret, API key, or local ledger data is committed. Changes to
+the safety-critical paths — `guardrail.py`, `budget.py`, and the `.opencode/` and `.agent/` permission
+and rules files — additionally require human review with an accompanying architecture decision or
+review memo (GOV-003), recorded in the governance artifacts. No administrator bypass is configured.
 
 ## 11. Process quality evidence
 

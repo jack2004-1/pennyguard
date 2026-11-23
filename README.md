@@ -109,8 +109,9 @@ $env:LLM_ENDPOINT = "<openai-compatible-chat-completions-url>"
 ## Blocking gates (CI)
 The GitHub Actions pipeline implements six blocking gates: test approval, static analysis,
 registry schema validation, semantic evaluation replay, full regression, and AI-use log freshness.
-Branch protection requires passing CI; changes to safety-critical paths require human review with
-an accompanying architecture decision. Details: `docs/code-governance/verification-constraints.md`.
+Branch protection on `main` requires the `blocking-gates` CI check to pass and disallows force
+pushes and branch deletion; changes to safety-critical paths require human review with an
+accompanying architecture decision. Details: `docs/code-governance/verification-constraints.md`.
 
 ## Security notes
 - The API key is read only from the environment; it is never committed, logged, persisted, or

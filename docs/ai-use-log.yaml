@@ -151,3 +151,26 @@ entries:
       endpoint key was committed before the push.
     decision: approved
     notes: Aligns the governance record with the D8 source/test commit.
+
+  - id: AU-008
+    timestamp: "2026-11-23T23:10:00+08:00"
+    actor: human
+    tool: repository-visibility and branch-protection setup
+    model: none
+    task: >-
+      Changed the repository to public so branch protection is enforceable on
+      the GitHub Free plan; created the main branch protection rule requiring
+      the blocking-gates CI check to pass and disallowing force pushes and
+      branch deletion; updated Report.md and README.md to reflect the enforced
+      rule.
+    files_touched:
+      - Report.md
+      - README.md
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human confirmed no secret, API key, or local ledger data is committed
+      before publishing; safety-critical path review and ADR requirements remain
+      recorded in the governance artifacts (GOV-003).
+    decision: approved
+    notes: Branch protection supersedes the earlier free-private limitation note;
+      the six blocking gates remain the required GitHub Actions checks.
