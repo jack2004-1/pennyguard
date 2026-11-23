@@ -132,3 +132,22 @@ entries:
       prompt/model change reaches the default path; reviewed branch-protection rules for critical paths.
     decision: approved
     notes: No secret or endpoint key was committed; live tests skip without LLM_API_KEY.
+
+  - id: AU-007
+    timestamp: "2026-11-23T22:50:00+08:00"
+    actor: human
+    tool: repository-integration review
+    model: none
+    task: >-
+      Reviewed the integrated source, tests, and gates before pushing to the
+      remote repository; reconciled this AI-use log with the implemented source
+      and test changes already recorded in AU-004 and AU-005, so the governance
+      log accompanies the code it describes.
+    files_touched:
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human verified the offline suite (37 passed, 1 live skipped), the five
+      deterministic gates, and zero safety escapes; confirmed no secret or
+      endpoint key was committed before the push.
+    decision: approved
+    notes: Aligns the governance record with the D8 source/test commit.
