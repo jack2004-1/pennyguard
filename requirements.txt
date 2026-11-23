@@ -1,0 +1,4 @@
+# Runtime third-party dependencies: none beyond the Python standard library.
+# Test/tooling dependencies used in CI and locally:
+pytest>=8.0
+PyYAML>=6.0

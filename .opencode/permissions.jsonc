@@ -1,0 +1,92 @@
+{
+  // PennyGuard machine-readable permission model (D3).
+  // Default deny: every path must be explicitly whitelisted per role.
+  // Mirror of docs/architecture/permission-model.md. Human-maintained; frozen.
+  "version": "1.0",
+  "default": { "read": false, "write": false },
+  "roles": {
+    "plan": {
+      "read": [
+        "docs/req/**",
+        "docs/architecture/**",
+        "docs/code-governance/**",
+        "AGENTS.md",
+        "architecture-blueprint.md",
+        "Prompt.md"
+      ],
+      "write": []
+    },
+    "coding": {
+      "read": [
+        "docs/req/**",
+        "docs/architecture/**",
+        "docs/code-governance/**",
+        "AGENTS.md",
+        "architecture-blueprint.md",
+        "Prompt.md",
+        "src/pennyguard/**",
+        "test/offline/**",
+        "test/live/**",
+        "prompts/**"
+      ],
+      "write": [
+        "src/pennyguard/<assigned-module>.py",
+        "test/offline/test_<module>.py",
+        "prompts/prompt_v<new>.yaml",
+        "docs/ai-use-log.yaml"
+      ]
+    },
+    "verification": {
+      "read": [
+        "docs/**",
+        "src/pennyguard/**",
+        "test/**",
+        "prompts/**"
+      ],
+      "write": [
+        "docs/review-memo.md",
+        "docs/bug-diary.md",
+        "docs/debt-register.md"
+      ]
+    }
+  },
+  "frozen_paths": [
+    "src/pennyguard/guardrail.py",
+    "src/pennyguard/budget.py",
+    ".opencode/**",
+    ".agent/**",
+    "prompts/prompt_v1.0.yaml"
+  ],
+  "guard_rules": [
+    {
+      "id": "GR-01",
+      "rule": "Deny read or write of any path not matched by an explicit whitelist glob.",
+      "enforcement": "permission check before fs.read/fs.write; violation logged as permission_denied."
+    },
+    {
+      "id": "GR-02",
+      "rule": "Frozen paths cannot be written by any agent role; changes require an ADR reference and human approval.",
+      "enforcement": "write attempt blocked; branch protection requires review for frozen-path PRs."
+    },
+    {
+      "id": "GR-03",
+      "rule": "The API key (LLM_API_KEY) must never be read, printed, or persisted by the agent.",
+      "enforcement": "secret redaction before output; no secret in logs, prompts, or ledger."
+    },
+    {
+      "id": "GR-04",
+      "rule": "Model-facing code must not expose a budget-write, ledger-delete, shell, or tool-call surface.",
+      "enforcement": "API-surface structural check in CI; boundary violation raises BoundaryViolation."
+    },
+    {
+      "id": "GR-05",
+      "rule": "A change to src/ or prompts/ must append an ai-use-log entry, else the AI-use log gate blocks.",
+      "enforcement": "CI diff check comparing changed paths against docs/ai-use-log.yaml."
+    }
+  ],
+  "secrets": {
+    "env_var": "LLM_API_KEY",
+    "agent_access": "denied",
+    "redact_in_output": true
+  }
+}

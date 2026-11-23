@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Virtual environment
+.venv/
+
+# Local runtime data (never committed; may contain personal expense data)
+.pennyguard/
+*.corrupt.json
+
+# Secrets / env
+.env
+*.env.local
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
