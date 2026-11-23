@@ -1,225 +1,252 @@
-# Demo Video Script — PennyGuard (assignment 327885)
+# Demo Video Script — PennyGuard（作业 327885）
 
-- **Student**: Yiyang BU (卜毅扬), Student ID 60392800, Group 43 (solo)
-- **Target**: one `.mp4`, **≤ 10 minutes**. Three required blocks (discussion 646809):
-  1. Product demo — before/after behaviour comparison;
-  2. Original software-engineering ideas (a plain business need does not count);
-  3. Traceability + agent governance and supervision.
-- **Recording rules**: do **not** show or read any API key, endpoint secret, or `.env` value;
-  keep the offline default path on camera; live LLM path is described, not required on camera.
-- **Environment before recording**: `Set-Location` to the project root; use
-  `.venv\Scripts\python.exe`; set `$env:PYTHONPATH="src"`. Clear any old `.pennyguard/` ledger
-  before the demo so the recorded `list` and `status` start empty.
+- **学生**：Yiyang BU（卜毅扬），学号 **60392800**，Group 43（单人 solo）
+- **成品要求**：**一个** `.mp4`，**时长 ≤ 10 分钟**。三块内容必须都讲到（讨论帖 646809）：
+  1. 产品演示 + **前后行为对比**；
+  2. **原创软件工程思路**（单纯"记账"这个业务需求不算）；
+  3. **可追溯性 + agent 治理与人工监督**。
+- **保密规则**：画面和讲解里都不要出现、不要念出任何 API key、端点密钥或 `.env` 内容；镜头里只走离线默认路径；真实大模型 live 路径口头描述即可，不需要在镜头前调用。
 
-## Time budget (total 09:30, leave 30 s margin)
+## 这份稿子怎么看（先读这一节）
 
-| Segment | Time | Required block |
-|---|---|---|
-| 0. Opening and identity | 0:00–0:40 | Setup |
-| 1. Product demo: offline happy path | 0:40–2:30 | Block 1 |
-| 2. Before/after: the safety boundary in action | 2:30–4:00 | Block 1 |
-| 3. Original SE ideas | 4:00–6:10 | Block 2 |
-| 4. Traceability: requirement → component → test → monitor | 6:10–7:40 | Block 3 |
-| 5. Agent governance and human supervision | 7:40–9:00 | Block 3 |
-| 6. Debt, risks, closing | 9:00–9:30 | Wrap-up |
+每一段都分成三块，格式固定：
+
+- **【操作】**：中文写的鼠标、键盘动作——点哪里、打开哪个文件、终端敲什么命令。照做就行。
+- **【英文讲稿】**：引用块（`>` 开头）里的英文，是你对着镜头**直接念**的台词，不用翻译。
+- **【提示】**：中文备注，告诉你鼠标/手指要指到屏幕上的哪个位置、哪句话是重点。
+
+> 命令代码块（```powershell）里的内容在终端原样敲；英文讲稿照念；其余中文都是给你自己看的操作说明。
 
 ---
 
-## 0. Opening and identity (0:00–0:40)
+## 一、录前准备（开录前 10 分钟做完）
 
-**On screen**: project root in VS Code; `README.md` open.
+### 1. 打开项目文件夹
+1. 启动 **VS Code**。
+2. 左上角菜单 `File → Open Folder`，选择这个文件夹：
+   ```
+   C:\Users\26424\Desktop\软件工程 周一\pennyguard
+   ```
+3. 打开底部终端：顶部菜单 `Terminal → New Terminal`，或按 `` Ctrl + ` ``（反引号，Tab 键上方那个键）。
+4. 看终端最前面的路径，确认停在 `...\pennyguard`；提示符最好带 `(.venv)`。
 
-**Say**:
-> "Hello, this is Yiyang BU, student ID 60392800, Group 43, solo submission for CS5351. The
-> project is PennyGuard: a local command-line expense tool that uses an AI component to suggest a
-> budget category, while deterministic code constrains every AI output. It was built from scratch;
-> no code, naming, or document was reused from any prior group repository."
+### 2. 清空旧账本（让演示从空数据开始）
+在底部终端粘贴下面这行，回车：
+```powershell
+Remove-Item -Recurse -Force .pennyguard -ErrorAction SilentlyContinue
+```
 
-**Point to**: README header, author/ID/group line, the advisory/authority one-paragraph summary.
-
-**Note (中文)**: 开场先报身份、学号、组别、单人提交；一句话讲清选题与"AI 建议 + 确定性护栏"双要求。
-
-## 1. Product demo — offline happy path (0:40–2:30)
-
-**On screen**: terminal at project root.
-
-**Commands to run (offline, no key, no network)**:
+### 3. 先跑一遍测试，确认全绿
+在终端粘贴，回车：
 ```powershell
 $env:PYTHONPATH = "src"
-.venv\Scripts\python.exe -m pennyguard.app add --description "Coffee and toast" --amount 12.50 --date 2026-11-23
-.venv\Scripts\python.exe -m pennyguard.app add --description "MTR ticket" --amount 6.00 --date 2026-11-23
-.venv\Scripts\python.exe -m pennyguard.app add --description "AMZN MKTPL ORDER" --amount 39.90 --date 2026-11-23
-.venv\Scripts\python.exe -m pennyguard.app list
-.venv\Scripts\python.exe -m pennyguard.app status
-.venv\Scripts\python.exe -m pennyguard.app eval
-```
-
-**Say**:
-> "The default path runs fully offline. With no API key configured, the system selects the
-> deterministic rule-based fallback and constructs no LLM client. Each record shows its category,
-> its provenance source, and the guardrail reason code. The `status` command accumulates spending
-> per category using exact decimal arithmetic. The `eval` command replays the fixed ten-fixture
-> set and reports faithfulness, relevance, and a zero safety-escape count."
-
-**Point to**: the `[rule]` source tag and `(OK)` reason code on each `add` line; the `status`
-within_budget rows; the eval report dict with `safety_escape_count: 0`.
-
-**Note (中文)**: 演示三条入账（food / transport / shopping），再 list、status、eval；强调默认离线、无 key、零 LLM 调用。
-
-## 2. Before/after — the safety boundary in action (2:30–4:00)
-
-**On screen**: `src/pennyguard/guardrail.py` and `docs/architecture/invariants.md` side by side.
-
-**Say (before — what an unguarded model path would allow)**:
-> "Without a deterministic boundary, an advisory model could return a category outside the intended
-> list, propose a different amount, or mark an over-budget record as compliant. Those are exactly
-> the failures this project blocks."
-
-**Say (after — what the guarded hybrid does)**:
-> "PennyGuard splits an advisory layer from an authority layer. The model-facing categorizer produces
-> a candidate only. The deterministic guardrail runs four checks: structural validation, whitelist
-> closure, amount conservation, and then the budget policy alone decides compliance. An
-> out-of-whitelist label is rejected and replaced with the reserved `other`; any model-supplied amount
-> is discarded and the input amount is kept; a model compliance signal cannot flip an over-budget
-> flag."
-
-**Point to in code**:
-- `validate_candidate` — `NOT_IN_WHITELIST`, `MALFORMED_RESPONSE`, `AMOUNT_OVERRIDE_IGNORED` reason codes.
-- `check_amount_conservation` — stored amount equals input amount.
-- `budget.py` — `BudgetPolicy.evaluate` owns the status; the model-facing package has no budget-write surface.
-
-**Show evidence**: open `test/offline/test_guardrail.py` and `test/offline/test_budget.py`; name the
-negative tests: out-of-whitelist rejection, amount conservation, malformed-response degradation,
-compliance-override rejection.
-
-**Note (中文)**: 这是"前后对比"核心：先讲无护栏时模型可能越界改类目/金额/合规，再讲四道确定性检查如何逐一拦截；配对应负面测试作证。
-
-## 3. Original software-engineering ideas (4:00–6:10)
-
-**On screen**: `docs/architecture/adr/001-guarded-hybrid-classifier.md`, `evaluation-table.md`,
-`prompt.py`, `runtime-policy-catalog.md`.
-
-**Say**:
-> "The business need — sorting expenses — is not the contribution. The engineering contribution is
-> how the AI component is constrained and made maintainable and auditable."
-
-Cover four SE ideas, each tied to an artifact:
-
-1. **Advisory/authority split with a closed API surface.** The `Categorizer` interface is the only
-   contract the app uses; both rule-based and LLM implementations conform to it. The model-facing
-   package cannot import budget-mutating or ledger-mutating APIs; a structural test enumerates its
-   exported names and confirms no write, delete, shell, or tool-call method exists.
-2. **Weighted architecture selection.** Five candidates were scored against six drivers weighted by
-   course priorities: safety boundary 0.25, offline determinism 0.20, genuine AI 0.15, cost/latency
-   0.15, maintainability 0.12, traceability 0.13. The guarded hybrid scored 4.55; model-direct write
-   scored 2.30 and fails the boundary; rules-only scores 4.10 but lacks the AI component.
-3. **Bounded, layered prompt assembly.** The context is split into identity, standing constraints,
-   whitelist knowledge, history, resumable state, and current task. The pipeline runs
-   dedup → prioritize → budget → compact → assemble → validate under a 600-unit cap with a 480-unit
-   compaction threshold. Constraints and the whitelist are exempt from truncation and re-injected
-   verbatim after compaction; the LLM call has an 8-second hard timeout.
-4. **Deterministic runtime policy catalog.** Fourteen degraded paths each have a concrete action:
-   no key, timeout, transport error, malformed payload, out-of-whitelist label, ignored model amount,
-   missing/corrupt ledger, missing budget, over-budget prompt, empty eval set, unknown CLI command,
-   boundary violation, and secret redaction. Fallbacks are observable through stable reason codes.
-
-**Point to**: evaluation-table scores; `_STANDING_CONSTRAINTS` and the assembler stages in `prompt.py`;
-the RP-01…RP-14 rows in the policy catalog.
-
-**Note (中文)**: 强调"业务需求不算原创点"，原创点是：分层权威边界、加权选型、分层上下文与压缩再注入、确定性降级策略目录。
-
-## 4. Traceability: requirement → component → test → monitor (6:10–7:40)
-
-**On screen**: `docs/req/requirements.yaml`, `docs/architecture/trace-matrix.md`,
-`docs/architecture/invariants.md`.
-
-**Say**:
-> "Every requirement is machine-readable and maps to an enforcing component, a test or evidence
-> artifact, and a runtime monitor. The registry has 25 requirements across seven types: functional,
-> invariant, quality, performance, cost, governance, security. Six are zero-tolerance invariants,
-> each with a test that fails when the invariant is violated."
-
-Walk three chains on camera:
-- **INV-001** closed whitelist → `guardrail.py` → `test_out_of_whitelist_rejected` → monitor reason
-  `NOT_IN_WHITELIST`.
-- **INV-003** deterministic compliance → `budget.py` → `test_ai_cannot_flip_compliance` → monitor
-  `compliance_override_rejected`.
-- **SEC-001** secret non-persistence → `config.py`/`ledger.py`/redaction →
-  `test_secret_not_persisted_or_leaked` → monitor `secret_redacted`.
-
-**Show**: the trace-matrix table rows; module headers that cite requirement/invariant IDs; the
-offline suite result — 37 passed, 1 live skipped without a key.
-
-**Run (optional, fast)**:
-```powershell
 .venv\Scripts\python.exe -m pytest test/offline/ -v
 ```
-Use `-v` so the ending banner `37 passed` is clearly visible on camera. The default `-q`
-quiet mode can leave the summary line buffered in the VS Code terminal; if only green dots
-appear, exit code `0` still means the suite passed.
+结尾要看到这一行横幅：
+```
+============================= 37 passed in 4.xxs ==============================
+```
+如果只看到一排绿点、没看到这行字，再敲 `echo $LASTEXITCODE`，显示 `0` 就代表通过。
 
-**Note (中文)**: 现场走三条追溯链；展示 25 条需求、6 条不变量、37 个离线测试；强调每个不变量都有"被违反时会失败"的测试。
+### 4. 确认屏幕上没有密钥
+终端敲下面这句，回车，结果应该是**空白**：
+```powershell
+echo $env:LLM_API_KEY
+```
+录制全程不要设置、不要展示任何 key。
 
-## 5. Agent governance and human supervision (7:40–9:00)
+### 5. 提前把要讲的文件在标签栏打开
+在左侧资源管理器里，按下面顺序点开，录的时候直接切标签，不用现场找：
+- `README.md`
+- `src/pennyguard/guardrail.py`、`src/pennyguard/budget.py`
+- `docs/architecture/invariants.md`
+- `test/offline/test_guardrail.py`、`test/offline/test_budget.py`
+- `docs/architecture/adr/001-guarded-hybrid-classifier.md`
+- `docs/architecture/evaluation-table.md`
+- `src/pennyguard/prompt.py`
+- `docs/architecture/runtime-policy-catalog.md`
+- `docs/req/requirements.yaml`
+- `docs/architecture/trace-matrix.md`
+- `AGENTS.md`、`Prompt.md`
+- `docs/ai-use-log.yaml`、`docs/review-memo.md`
+- `transcripts/60392800-YiyangBU.md`
+- `.opencode/permissions.jsonc`
+- `.github/workflows/ci.yml`、`scripts/` 文件夹
+- `docs/debt-register.md`、`docs/architecture/risk-list.md`
 
-**On screen**: `AGENTS.md`, `Prompt.md`, `docs/ai-use-log.yaml`, `docs/review-memo.md`,
-`transcripts/60392800-YiyangBU.md`, `.opencode/permissions.jsonc`.
+### 6. 环境收尾
+- 关掉微信、邮件、系统通知，避免弹窗录进视频；
+- 确认麦克风能用（录屏时要开录音）；
+- 把编辑器和终端字号调大一点，让评委能看清命令和代码。
 
-**Say**:
-> "The coding agent is a supervised assistant, not an unattended author. `AGENTS.md` is its single
-> entry point; `Prompt.md` instructs it to produce a plan and stop for human approval before any code.
-> The permission model defaults to no read and no write; every allowed path is an explicit whitelist.
-> Guardrail, budget policy, and permission/rules files are frozen paths that need an ADR and human
-> approval to change."
+## 二、录屏工具操作（Windows 自带 Xbox Game Bar，不用装软件）
 
-Cover the supervision evidence:
-- **Plan gate**: no source code until the human approved traceability, contracts, scope boundary, and
-  negative-test coverage.
-- **Six CI blocking gates**: test approval, static analysis, schema, semantic evaluation, regression,
-  AI-use log freshness. Show `.github/workflows/ci.yml` and the four helper scripts in `scripts/`.
-- **AI-use log**: every code or prompt change appends an entry; a change touching `src/` or `prompts/`
-  without a log update is blocked.
-- **Annotated transcript**: six stages — requirements classification, architecture candidate
-  generation and evaluation, pre-code plan approval, build, verification compliance, architecture
-  revision on test evidence — with APPROVED / REDIRECTED / REJECTED / INTERRUPTED / QUESTIONED marks.
-- **What the human caught that the agent did not flag**: YAML plain-scalar colon parse failure;
-  integer/string schema mismatch; unmatched bracket at collection; native exceptions bypassing
-  degradation; the CLI `SystemExit` contract; and a lexicon synonym gap that was fixed in the fallback
-  table rather than by relaxing the whitelist.
+1. 鼠标先点一下 **VS Code 窗口**，让它在最前面。
+2. 按 **`Win + G`**，屏幕上会弹出游戏栏小组件（带一个圆点录制按钮）。
+3. 在小组件上点**麦克风图标**，允许录音；不开就只有画面、没有你的声音。
+4. 开始录制：按 **`Win + Alt + R`**（或点那个圆点）。
+5. 停止录制：再按一次 **`Win + Alt + R`**。
+6. 录好的 `.mp4` 自动存在：
+   ```
+   C:\Users\26424\Videos\Captures
+   ```
 
-**Note (中文)**: 讲清两类 AI 不混淆：写代码的 coding agent（被监督、被记录）与产品内嵌的可选运行时 LLM（被护栏约束）；展示人工介入标注与六类人工抓到的问题。
+**注意两点：**
+- Game Bar 只能录**当前这个应用窗口**，录不到桌面和文件资源管理器，所以所有操作都在 VS Code 里完成（终端 + 编辑器标签切换），不要切到别的窗口。
+- 如果提示"无法录制此窗口"，再装免费的 OBS Studio 录全屏；需要的话再单独要 OBS 分步设置。
+- 建议先试录 1 分钟回放，确认画面清楚、声音正常、终端文字看得清，再正式录。
 
-## 6. Debt, risks, closing (9:00–9:30)
+## 三、时间分配（总时长控制在 9 分半以内，留 30 秒余量）
 
-**On screen**: `docs/debt-register.md`, `docs/architecture/risk-list.md`.
-
-**Say**:
-> "Known gaps are tracked, not hidden: a small evaluation corpus, prompt rot, frozen-code
-> maintainability, hidden provider dependencies, and solo-author cognitive debt. Each has a
-> mitigation and a review trigger. Future work is to expand the evaluation corpus, add a provider
-> adapter test behind the live seam, and revisit retrieval-augmented categorization only if the label
-> space grows. Thank you."
-
-**Closing point**: README commands to reproduce offline tests, live tests, and the full suite; the
-repository link is filled in after pushing to GitHub (account `jack2004-1`).
+| 段落 | 时间 | 对应必含块 |
+|---|---|---|
+| 0. 开场报身份 | 0:00–0:40 | 准备 |
+| 1. 产品演示：离线正常流程 | 0:40–2:30 | 块 1 |
+| 2. 前后对比：安全边界起作用 | 2:30–4:00 | 块 1 |
+| 3. 原创软件工程思路 | 4:00–6:10 | 块 2 |
+| 4. 可追溯性：需求 → 组件 → 测试 → 监控 | 6:10–7:40 | 块 3 |
+| 5. agent 治理与人工监督 | 7:40–9:00 | 块 3 |
+| 6. 债务、风险、收尾 | 9:00–9:30 | 收尾 |
 
 ---
 
-## Pre-recording checklist
+## 第 0 段｜开场报身份（0:00–0:40）
 
-- [ ] `.pennyguard/` cleared so demo data starts clean.
-- [ ] No `LLM_API_KEY` or secret visible in terminal, files, or screen share.
-- [ ] Offline suite green: 37 passed, 1 skipped.
-- [ ] Four gate scripts run clean: schema, structural, test-approval, semantic eval.
-- [ ] `eval` shows faithfulness 1.0, relevance 1.0, zero safety escapes.
-- [ ] Video is a single `.mp4`, under 10 minutes, with all three required blocks.
-- [ ] Speaker introduces name, student ID, group, and solo submission at the start.
+**【操作】**
+- 鼠标点左侧资源管理器里的 `README.md`，让它显示在编辑区；
+- 滚动到文件最开头，露出标题和作者/学号/组别那几行。
 
-## Block-to-evidence mapping (for the panel)
+**【英文讲稿】**
+> "Hello, this is Yiyang BU, student ID 60392800, Group 43, solo submission for CS5351. The project is PennyGuard: a local command-line expense tool that uses an AI component to suggest a budget category, while deterministic code constrains every AI output. It was built from scratch; no code, naming, or document was reused from any prior group repository."
 
-| Required block | Where it appears in the repo |
+**【提示】**
+- 鼠标点到 README 头部的作者、学号、组别行；
+- 再点到"咨询层 / 权威层"那段概述。
+
+## 第 1 段｜产品演示：离线正常流程（0:40–2:30）
+
+**【操作】**
+- 鼠标点底部终端面板，让光标停在终端里；
+- 逐条粘贴下面命令，每敲一条按一次回车：
+  ```powershell
+  $env:PYTHONPATH = "src"
+  .venv\Scripts\python.exe -m pennyguard.app add --description "Coffee and toast" --amount 12.50 --date 2026-11-23
+  .venv\Scripts\python.exe -m pennyguard.app add --description "MTR ticket" --amount 6.00 --date 2026-11-23
+  .venv\Scripts\python.exe -m pennyguard.app add --description "AMZN MKTPL ORDER" --amount 39.90 --date 2026-11-23
+  .venv\Scripts\python.exe -m pennyguard.app list
+  .venv\Scripts\python.exe -m pennyguard.app status
+  .venv\Scripts\python.exe -m pennyguard.app eval
+  ```
+
+**【英文讲稿】**
+> "The default path runs fully offline. With no API key configured, the system selects the deterministic rule-based fallback and constructs no LLM client. Each record shows its category, its provenance source, and the guardrail reason code. The `status` command accumulates spending per category using exact decimal arithmetic. The `eval` command replays the fixed ten-fixture set and reports faithfulness, relevance, and a zero safety-escape count."
+
+**【提示】**
+- 指每条 `add` 输出里的 `[rule]` 来源标签和 `(OK)` 原因码；
+- 指 `status` 里的 within_budget 行；
+- 指 `eval` 结果里的 `safety_escape_count: 0`。
+
+## 第 2 段｜前后对比：安全边界如何起作用（2:30–4:00）
+
+**【操作】**
+- 左侧点开 `src/pennyguard/guardrail.py`；
+- 在标签上点右键 → `Split Right`（向右拆分），再在右边打开 `docs/architecture/invariants.md`，两个文件并排；
+- 之后再切到 `test/offline/test_guardrail.py` 和 `test/offline/test_budget.py`。
+
+**【英文讲稿 · 改之前（无护栏会怎样）】**
+> "Without a deterministic boundary, an advisory model could return a category outside the intended list, propose a different amount, or mark an over-budget record as compliant. Those are exactly the failures this project blocks."
+
+**【英文讲稿 · 改之后（护栏混合体怎么做）】**
+> "PennyGuard splits an advisory layer from an authority layer. The model-facing categorizer produces a candidate only. The deterministic guardrail runs four checks: structural validation, whitelist closure, amount conservation, and then the budget policy alone decides compliance. An out-of-whitelist label is rejected and replaced with the reserved `other`; any model-supplied amount is discarded and the input amount is kept; a model compliance signal cannot flip an over-budget flag."
+
+**【提示】**
+- 在 `guardrail.py` 里指到 `validate_candidate`，以及原因码 `NOT_IN_WHITELIST`、`MALFORMED_RESPONSE`、`AMOUNT_OVERRIDE_IGNORED`；
+- 指金额守恒检查：记录金额等于输入金额；
+- 在 `budget.py` 里指 `BudgetPolicy.evaluate`：合规状态由它独自决定，模型侧包没有写预算的接口；
+- 打开两个测试文件，点名负面测试：白名单外拒绝、金额守恒、畸形响应降级、合规覆盖拒绝。
+
+## 第 3 段｜原创软件工程思路（4:00–6:10）
+
+**【操作】**
+- 依次切标签：`adr/001-guarded-hybrid-classifier.md` → `evaluation-table.md` → `prompt.py` → `runtime-policy-catalog.md`。
+
+**【英文讲稿】**
+> "The business need — sorting expenses — is not the contribution. The engineering contribution is how the AI component is constrained and made maintainable and auditable."
+
+> "First, an advisory/authority split with a closed API surface. The `Categorizer` interface is the only contract the app uses; both the rule-based and LLM implementations conform to it. The model-facing package cannot import budget-mutating or ledger-mutating APIs; a structural test enumerates its exported names and confirms no write, delete, shell, or tool-call method exists."
+
+> "Second, a weighted architecture selection. Five candidates were scored against six drivers weighted by course priorities: safety boundary 0.25, offline determinism 0.20, genuine AI 0.15, cost and latency 0.15, maintainability 0.12, traceability 0.13. The guarded hybrid scored 4.55; model-direct write scored 2.30 and fails the boundary; rules-only scores 4.10 but lacks the AI component."
+
+> "Third, a bounded, layered prompt assembly. The context is split into identity, standing constraints, whitelist knowledge, history, resumable state, and current task. The pipeline runs dedup, prioritize, budget, compact, assemble, and validate, under a 600-unit cap with a 480-unit compaction threshold. Constraints and the whitelist are exempt from truncation and re-injected verbatim after compaction; the LLM call has an 8-second hard timeout."
+
+> "Fourth, a deterministic runtime policy catalog. Fourteen degraded paths each have a concrete action: no key, timeout, transport error, malformed payload, out-of-whitelist label, ignored model amount, missing or corrupt ledger, missing budget, over-budget prompt, empty eval set, unknown CLI command, boundary violation, and secret redaction. Fallbacks are observable through stable reason codes."
+
+**【提示】**
+- 在评估表里指打分：护栏混合体 4.55；
+- 在 `prompt.py` 里指常驻约束 `_STANDING_CONSTRAINTS` 和装配阶段；
+- 在策略目录里指 RP-01 到 RP-14 各行。
+
+## 第 4 段｜可追溯性：需求 → 组件 → 测试 → 监控（6:10–7:40）
+
+**【操作】**
+- 依次切标签：`docs/req/requirements.yaml` → `docs/architecture/trace-matrix.md` → `docs/architecture/invariants.md`；
+- 可选：在终端快速跑一次测试：
+  ```powershell
+  .venv\Scripts\python.exe -m pytest test/offline/ -v
+  ```
+
+**【英文讲稿】**
+> "Every requirement is machine-readable and maps to an enforcing component, a test or evidence artifact, and a runtime monitor. The registry has 25 requirements across seven types: functional, invariant, quality, performance, cost, governance, and security. Six are zero-tolerance invariants, each with a test that fails when the invariant is violated."
+
+> "Here are three chains. First, INV-001, closed whitelist: `guardrail.py`, the test `test_out_of_whitelist_rejected`, and the monitor reason `NOT_IN_WHITELIST`. Second, INV-003, deterministic compliance: `budget.py`, the test `test_ai_cannot_flip_compliance`, and the monitor `compliance_override_rejected`. Third, SEC-001, secret non-persistence: `config.py`, `ledger.py` and the redaction routine, the test `test_secret_not_persisted_or_leaked`, and the monitor `secret_redacted`."
+
+**【提示】**
+- 指 trace-matrix 表里的行；指模块头部引用的需求/不变量编号；
+- 展示 25 条需求、6 条不变量、37 个离线测试；强调每条不变量都配了一个"被违反时会失败"的测试。
+
+## 第 5 段｜agent 治理与人工监督（7:40–9:00）
+
+**【操作】**
+- 依次切标签：`AGENTS.md` → `Prompt.md` → `docs/ai-use-log.yaml` → `docs/review-memo.md` → `transcripts/60392800-YiyangBU.md` → `.opencode/permissions.jsonc` → `.github/workflows/ci.yml` → `scripts/` 文件夹。
+
+**【英文讲稿】**
+> "The coding agent is a supervised assistant, not an unattended author. `AGENTS.md` is its single entry point; `Prompt.md` instructs it to produce a plan and stop for human approval before any code. The permission model defaults to no read and no write; every allowed path is an explicit whitelist. Guardrail, budget policy, and permission and rules files are frozen paths that need an ADR and human approval to change."
+
+> "The supervision evidence has five parts. A plan gate: no source code until the human approved traceability, contracts, scope boundary, and negative-test coverage. Six CI blocking gates: test approval, static analysis, schema, semantic evaluation, regression, and AI-use log freshness. An AI-use log: every code or prompt change appends an entry; a change touching `src/` or `prompts/` without a log update is blocked. An annotated transcript across six stages: requirements classification, architecture candidate generation and evaluation, pre-code plan approval, build, verification compliance, and revision on test evidence, marked with APPROVED, REDIRECTED, REJECTED, INTERRUPTED, and QUESTIONED."
+
+> "Finally, here are issues the human caught that the agent did not flag on its own: a plain-scalar colon that broke YAML parsing; an integer/string schema mismatch; an unmatched bracket visible only at collection; native exceptions bypassing the degradation contract; the CLI `SystemExit` contract; and a lexicon synonym gap that was fixed in the fallback table rather than by relaxing the whitelist."
+
+**【提示】**
+- 讲清两类 AI 不要混淆：写代码的 coding agent（被监督、被记录）≠ 产品里那个可选的运行时 LLM（被护栏约束）；
+- 指 transcript 里的介入标注和那六类人工抓到的问题。
+
+## 第 6 段｜债务、风险、收尾（9:00–9:30）
+
+**【操作】**
+- 切到 `docs/debt-register.md`，再切 `docs/architecture/risk-list.md`。
+
+**【英文讲稿】**
+> "Known gaps are tracked, not hidden: a small evaluation corpus, prompt rot, frozen-code maintainability, hidden provider dependencies, and solo-author cognitive debt. Each has a mitigation and a review trigger. Future work is to expand the evaluation corpus, add a provider adapter test behind the live seam, and revisit retrieval-augmented categorization only if the label space grows. Thank you."
+
+**【提示】**
+- 结尾可指一下 README 里复现离线测试、live 测试和全套测试的命令，以及仓库链接（账号 `jack2004-1`）。
+
+---
+
+## 录完自查清单（中文核对）
+
+- [ ] 是**一个** `.mp4`，**总时长 < 10 分钟**；
+- [ ] 开场报了姓名、学号、组别、单人提交；
+- [ ] 三块必含都讲到：前后对比、原创 SE 思路、可追溯性 + 治理监督；
+- [ ] 画面里没有任何密钥 / `.env`；
+- [ ] 声音清楚，命令、代码、表格能看清；
+- [ ] 结尾测试横幅是 `37 passed`。
+
+## 证据对照表（给评委看每块对应仓库哪里）
+
+| 必含块 | 仓库对应位置 |
 |---|---|
-| Product demo + before/after | `src/pennyguard/app.py`, `guardrail.py`, `budget.py`, `test/offline/test_guardrail.py`, `test/offline/test_budget.py` |
-| Original SE ideas | `adr/001-guarded-hybrid-classifier.md`, `evaluation-table.md`, `prompt.py`, `runtime-policy-catalog.md`, `permission-model.md` |
-| Traceability | `requirements.yaml`, `trace-matrix.md`, `invariants.md`, module header ID citations, offline tests |
-| Agent governance | `AGENTS.md`, `Prompt.md`, `ai-use-log.yaml`, `review-memo.md`, `transcripts/60392800-YiyangBU.md`, `ci.yml`, `scripts/` |
+| 产品演示 + 前后对比 | `src/pennyguard/app.py`、`guardrail.py`、`budget.py`、`test/offline/test_guardrail.py`、`test/offline/test_budget.py` |
+| 原创 SE 思路 | `adr/001-guarded-hybrid-classifier.md`、`evaluation-table.md`、`prompt.py`、`runtime-policy-catalog.md`、`permission-model.md` |
+| 可追溯性 | `requirements.yaml`、`trace-matrix.md`、`invariants.md`、模块头部编号引用、离线测试 |
+| agent 治理 | `AGENTS.md`、`Prompt.md`、`ai-use-log.yaml`、`review-memo.md`、`transcripts/60392800-YiyangBU.md`、`ci.yml`、`scripts/` |

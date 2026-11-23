@@ -194,3 +194,26 @@ entries:
     decision: approved
     notes: Documentation-only change; no product behavior, requirement, or
       invariant was affected.
+
+  - id: AU-010
+    timestamp: "2026-11-23T23:48:00+08:00"
+    actor: human
+    tool: demo-script revision
+    model: none
+    task: >-
+      Restructured the demo video script so all mouse/keyboard operation
+      guidance, file locations, and on-screen pointers are written in Chinese
+      for the presenter, while the English spoken lines to be delivered on
+      camera are kept verbatim in quoted blocks; added a plain usage guide,
+      pre-recording checklist, and Game Bar recording steps in Chinese.
+    files_touched:
+      - docs/demo-video-script.md
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human kept the English script's factual claims unchanged (37 passed,
+      25 requirements, 6 invariants, 4.55 score, 600/480/8s, 14 policies,
+      zero escapes) and only reorganized the presentation aid; no source or
+      prompt changed.
+    decision: approved
+    notes: Documentation-only change; no product behavior, requirement, or
+      invariant was affected.
