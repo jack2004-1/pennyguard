@@ -152,8 +152,11 @@ offline suite result — 37 passed, 1 live skipped without a key.
 
 **Run (optional, fast)**:
 ```powershell
-.venv\Scripts\python.exe -m pytest test/offline/ -q
+.venv\Scripts\python.exe -m pytest test/offline/ -v
 ```
+Use `-v` so the ending banner `37 passed` is clearly visible on camera. The default `-q`
+quiet mode can leave the summary line buffered in the VS Code terminal; if only green dots
+appear, exit code `0` still means the suite passed.
 
 **Note (中文)**: 现场走三条追溯链；展示 25 条需求、6 条不变量、37 个离线测试；强调每个不变量都有"被违反时会失败"的测试。
 

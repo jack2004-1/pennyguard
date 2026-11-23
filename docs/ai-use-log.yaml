@@ -174,3 +174,23 @@ entries:
     decision: approved
     notes: Branch protection supersedes the earlier free-private limitation note;
       the six blocking gates remain the required GitHub Actions checks.
+
+  - id: AU-009
+    timestamp: "2026-11-23T23:30:00+08:00"
+    actor: human
+    tool: demo-script revision
+    model: none
+    task: >-
+      Updated the demo video script's offline test command to `-v` so the
+      `37 passed` summary banner is visible on camera; noted that the default
+      `-q` quiet mode can buffer the summary line in the VS Code terminal and
+      that exit code 0 still indicates a passing suite.
+    files_touched:
+      - docs/demo-video-script.md
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human verified the offline suite remains 37 passed with exit code 0
+      before revising the recorded command; no source or prompt changed.
+    decision: approved
+    notes: Documentation-only change; no product behavior, requirement, or
+      invariant was affected.
