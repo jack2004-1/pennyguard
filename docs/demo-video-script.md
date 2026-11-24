@@ -9,10 +9,11 @@
 
 ## 这份稿子怎么看（先读这一节）
 
-每一段都分成三块，格式固定：
+每一段都分成四块，格式固定：
 
 - **【操作】**：中文写的鼠标、键盘动作——点哪里、打开哪个文件、终端敲什么命令。照做就行。
-- **【英文讲稿】**：引用块（`>` 开头）里的英文，是你对着镜头**直接念**的台词，不用翻译。
+- **【英文讲稿】**：引用块（`>` 开头）里的英文，是你对着镜头**直接念**的台词。
+- **【中文意思】**：紧跟在英文讲稿下面，是这句英文的中文释义，帮你理解自己在念什么；**录的时候仍然念上面的英文**，不用念中文。
 - **【提示】**：中文备注，告诉你鼠标/手指要指到屏幕上的哪个位置、哪句话是重点。
 
 > 命令代码块（```powershell）里的内容在终端原样敲；英文讲稿照念；其余中文都是给你自己看的操作说明。
@@ -119,6 +120,8 @@ echo $env:LLM_API_KEY
 **【英文讲稿】**
 > "Hello, this is Yiyang BU, student ID 60392800, Group 43, solo submission for CS5351. The project is PennyGuard: a local command-line expense tool that uses an AI component to suggest a budget category, while deterministic code constrains every AI output. It was built from scratch; no code, naming, or document was reused from any prior group repository."
 
+**【中文意思】**：大家好，我是 Yiyang BU，学号 60392800，第 43 组，CS5351 的单人提交。项目叫 PennyGuard，是一个本地命令行记账工具：用 AI 组件来建议预算类目，但由确定性代码约束 AI 的每一处输出。它是从零搭建的，没有复用之前任何小组仓库里的代码、命名或文档。
+
 **【提示】**
 - 鼠标点到 README 头部的作者、学号、组别行；
 - 再点到"咨询层 / 权威层"那段概述。
@@ -141,6 +144,8 @@ echo $env:LLM_API_KEY
 **【英文讲稿】**
 > "The default path runs fully offline. With no API key configured, the system selects the deterministic rule-based fallback and constructs no LLM client. Each record shows its category, its provenance source, and the guardrail reason code. The `status` command accumulates spending per category using exact decimal arithmetic. The `eval` command replays the fixed ten-fixture set and reports faithfulness, relevance, and a zero safety-escape count."
 
+**【中文意思】**：默认路径完全离线运行。在没有配置 API key 的情况下，系统会选用确定性的规则兜底方案，不创建任何大模型客户端。每条记录都会显示它的类目、来源出处和护栏原因码。`status` 命令用精确的十进制运算按类目汇总支出。`eval` 命令会重跑固定的十条测试用例，报告忠实度、相关性，以及安全逃逸次数为零。
+
 **【提示】**
 - 指每条 `add` 输出里的 `[rule]` 来源标签和 `(OK)` 原因码；
 - 指 `status` 里的 within_budget 行；
@@ -156,8 +161,12 @@ echo $env:LLM_API_KEY
 **【英文讲稿 · 改之前（无护栏会怎样）】**
 > "Without a deterministic boundary, an advisory model could return a category outside the intended list, propose a different amount, or mark an over-budget record as compliant. Those are exactly the failures this project blocks."
 
+**【中文意思】**：如果没有这道确定性边界，一个只负责建议的模型可能返回清单之外的类目、提出不同的金额，或者把超预算的记录标记为合规。这些正是本项目要拦住的错误。
+
 **【英文讲稿 · 改之后（护栏混合体怎么做）】**
 > "PennyGuard splits an advisory layer from an authority layer. The model-facing categorizer produces a candidate only. The deterministic guardrail runs four checks: structural validation, whitelist closure, amount conservation, and then the budget policy alone decides compliance. An out-of-whitelist label is rejected and replaced with the reserved `other`; any model-supplied amount is discarded and the input amount is kept; a model compliance signal cannot flip an over-budget flag."
+
+**【中文意思】**：PennyGuard 把"建议层"和"权威层"分开。面向模型的分类器只产出一个候选结果。确定性护栏执行四道检查：结构校验、白名单闭合、金额守恒，之后由预算策略独自判定是否合规。白名单之外的标签会被拒绝，并替换成保留类目 `other`；模型给出的任何金额都会被丢弃，保留原始输入金额；模型的合规信号不能翻转超预算标记。
 
 **【提示】**
 - 在 `guardrail.py` 里指到 `validate_candidate`，以及原因码 `NOT_IN_WHITELIST`、`MALFORMED_RESPONSE`、`AMOUNT_OVERRIDE_IGNORED`；
@@ -173,13 +182,23 @@ echo $env:LLM_API_KEY
 **【英文讲稿】**
 > "The business need — sorting expenses — is not the contribution. The engineering contribution is how the AI component is constrained and made maintainable and auditable."
 
+**【中文意思】**：业务需求本身——给支出分类——并不是我们的贡献；工程上的贡献在于：如何约束这个 AI 组件，并让它可维护、可审计。
+
 > "First, an advisory/authority split with a closed API surface. The `Categorizer` interface is the only contract the app uses; both the rule-based and LLM implementations conform to it. The model-facing package cannot import budget-mutating or ledger-mutating APIs; a structural test enumerates its exported names and confirms no write, delete, shell, or tool-call method exists."
+
+**【中文意思】**：第一，建议层与权威层分离，并收紧对外接口。`Categorizer` 接口是应用唯一依赖的契约，规则实现和大模型实现都遵循它。面向模型的包不能导入修改预算或账本的接口；一个结构测试会枚举它对外暴露的名字，确认不存在任何写入、删除、Shell 或工具调用方法。
 
 > "Second, a weighted architecture selection. Five candidates were scored against six drivers weighted by course priorities: safety boundary 0.25, offline determinism 0.20, genuine AI 0.15, cost and latency 0.15, maintainability 0.12, traceability 0.13. The guarded hybrid scored 4.55; model-direct write scored 2.30 and fails the boundary; rules-only scores 4.10 but lacks the AI component."
 
+**【中文意思】**：第二，加权的架构选型。五个候选方案按六个驱动因素打分，权重按课程优先级设定：安全边界 0.25、离线确定性 0.20、真实 AI 成分 0.15、成本与延迟 0.15、可维护性 0.12、可追溯性 0.13。护栏混合体得分 4.55；模型直接写入得 2.30，且过不了安全边界；纯规则方案得 4.10，但缺少 AI 组件。
+
 > "Third, a bounded, layered prompt assembly. The context is split into identity, standing constraints, whitelist knowledge, history, resumable state, and current task. The pipeline runs dedup, prioritize, budget, compact, assemble, and validate, under a 600-unit cap with a 480-unit compaction threshold. Constraints and the whitelist are exempt from truncation and re-injected verbatim after compaction; the LLM call has an 8-second hard timeout."
 
+**【中文意思】**：第三，有上限、分层的提示词装配。上下文被分成身份、常驻约束、白名单知识、历史记录、可恢复状态和当前任务几个部分。流水线依次执行去重、优先级排序、额度控制、压缩、装配、校验，上限 600 个单位，压缩阈值 480。约束和白名单不参与截断，压缩后逐字重新注入；大模型调用有 8 秒硬性超时。
+
 > "Fourth, a deterministic runtime policy catalog. Fourteen degraded paths each have a concrete action: no key, timeout, transport error, malformed payload, out-of-whitelist label, ignored model amount, missing or corrupt ledger, missing budget, over-budget prompt, empty eval set, unknown CLI command, boundary violation, and secret redaction. Fallbacks are observable through stable reason codes."
+
+**【中文意思】**：第四，确定性的运行时策略目录。十四条降级路径各自有明确的处理动作：无 key、超时、传输错误、畸形载荷、白名单外标签、被忽略的模型金额、账本缺失或损坏、预算缺失、超预算提示、空评估集、未知命令、边界违规，以及密钥脱敏。兜底行为都通过稳定的原因码可观测。
 
 **【提示】**
 - 在评估表里指打分：护栏混合体 4.55；
@@ -198,7 +217,11 @@ echo $env:LLM_API_KEY
 **【英文讲稿】**
 > "Every requirement is machine-readable and maps to an enforcing component, a test or evidence artifact, and a runtime monitor. The registry has 25 requirements across seven types: functional, invariant, quality, performance, cost, governance, and security. Six are zero-tolerance invariants, each with a test that fails when the invariant is violated."
 
+**【中文意思】**：每条需求都是机器可读的，并对应到一个执行它的组件、一个测试或证据产物，以及一个运行时监控。需求登记表共 25 条，分七类：功能、不变量、质量、性能、成本、治理、安全。其中六条是零容忍不变量，每条都配有一个在不变量被违反时会失败的测试。
+
 > "Here are three chains. First, INV-001, closed whitelist: `guardrail.py`, the test `test_out_of_whitelist_rejected`, and the monitor reason `NOT_IN_WHITELIST`. Second, INV-003, deterministic compliance: `budget.py`, the test `test_ai_cannot_flip_compliance`, and the monitor `compliance_override_rejected`. Third, SEC-001, secret non-persistence: `config.py`, `ledger.py` and the redaction routine, the test `test_secret_not_persisted_or_leaked`, and the monitor `secret_redacted`."
+
+**【中文意思】**：这里走三条追溯链。第一，INV-001 白名单闭合：`guardrail.py`，测试 `test_out_of_whitelist_rejected`，监控原因 `NOT_IN_WHITELIST`。第二，INV-003 合规确定性：`budget.py`，测试 `test_ai_cannot_flip_compliance`，监控 `compliance_override_rejected`。第三，SEC-001 密钥不落盘：`config.py`、`ledger.py` 及脱敏例程，测试 `test_secret_not_persisted_or_leaked`，监控 `secret_redacted`。
 
 **【提示】**
 - 指 trace-matrix 表里的行；指模块头部引用的需求/不变量编号；
@@ -212,9 +235,15 @@ echo $env:LLM_API_KEY
 **【英文讲稿】**
 > "The coding agent is a supervised assistant, not an unattended author. `AGENTS.md` is its single entry point; `Prompt.md` instructs it to produce a plan and stop for human approval before any code. The permission model defaults to no read and no write; every allowed path is an explicit whitelist. Guardrail, budget policy, and permission and rules files are frozen paths that need an ADR and human approval to change."
 
+**【中文意思】**：写代码的 agent 是受监督的助手，不是无人看管的作者。`AGENTS.md` 是它唯一的入口；`Prompt.md` 要求它先出方案、在写任何代码前停下来等人工批准。权限模型默认不可读、不可写，所有放行路径都是显式白名单。护栏、预算策略以及权限和规则文件都是冻结路径，要改动必须有 ADR 并经人工批准。
+
 > "The supervision evidence has five parts. A plan gate: no source code until the human approved traceability, contracts, scope boundary, and negative-test coverage. Six CI blocking gates: test approval, static analysis, schema, semantic evaluation, regression, and AI-use log freshness. An AI-use log: every code or prompt change appends an entry; a change touching `src/` or `prompts/` without a log update is blocked. An annotated transcript across six stages: requirements classification, architecture candidate generation and evaluation, pre-code plan approval, build, verification compliance, and revision on test evidence, marked with APPROVED, REDIRECTED, REJECTED, INTERRUPTED, and QUESTIONED."
 
+**【中文意思】**：监督证据分五部分。方案门禁：在人工批准可追溯性、接口契约、范围边界和负面测试覆盖之前，不写源码。六道 CI 阻断门禁：测试批准、静态分析、结构规范、语义评估、回归测试、AI 使用日志新鲜度。AI 使用日志：每次代码或提示词改动都追加一条记录；改动触及 `src/` 或 `prompts/` 却没更新日志，会被阻断。一份跨六个阶段的标注记录：需求分类、架构候选生成与评估、写码前方案批准、构建、验证合规、按测试证据修订，标注有 APPROVED（批准）、REDIRECTED（改向）、REJECTED（拒绝）、INTERRUPTED（打断）、QUESTIONED（存疑）。
+
 > "Finally, here are issues the human caught that the agent did not flag on its own: a plain-scalar colon that broke YAML parsing; an integer/string schema mismatch; an unmatched bracket visible only at collection; native exceptions bypassing the degradation contract; the CLI `SystemExit` contract; and a lexicon synonym gap that was fixed in the fallback table rather than by relaxing the whitelist."
+
+**【中文意思】**：最后，这些是人工发现、agent 自己没有标出的问题：纯标量里的冒号导致 YAML 解析失败；整数与字符串的模式不匹配；只有在收集阶段才暴露的括号不配对；原生异常绕过了降级契约；CLI 的 `SystemExit` 契约；以及一处词典同义词缺口——最终是在兜底表里修复，而不是放宽白名单。
 
 **【提示】**
 - 讲清两类 AI 不要混淆：写代码的 coding agent（被监督、被记录）≠ 产品里那个可选的运行时 LLM（被护栏约束）；
@@ -227,6 +256,8 @@ echo $env:LLM_API_KEY
 
 **【英文讲稿】**
 > "Known gaps are tracked, not hidden: a small evaluation corpus, prompt rot, frozen-code maintainability, hidden provider dependencies, and solo-author cognitive debt. Each has a mitigation and a review trigger. Future work is to expand the evaluation corpus, add a provider adapter test behind the live seam, and revisit retrieval-augmented categorization only if the label space grows. Thank you."
+
+**【中文意思】**：已知缺口都被记录在案、没有隐瞒：评估语料偏小、提示词腐化、冻结代码的可维护性、隐藏的提供方依赖，以及单人作者的认知负担。每条都有缓解措施和复核触发条件。未来工作包括扩充评估语料、在 live 接缝后补一个提供方适配器测试，并且只有在类目空间扩大时才重新考虑检索增强分类。谢谢大家。
 
 **【提示】**
 - 结尾可指一下 README 里复现离线测试、live 测试和全套测试的命令，以及仓库链接（账号 `jack2004-1`）。

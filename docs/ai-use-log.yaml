@@ -217,3 +217,23 @@ entries:
     decision: approved
     notes: Documentation-only change; no product behavior, requirement, or
       invariant was affected.
+
+  - id: AU-011
+    timestamp: "2026-11-24T18:20:00+08:00"
+    actor: human
+    tool: demo-script revision
+    model: none
+    task: >-
+      Added a Chinese translation line under each English spoken block in
+      the demo video script, so the presenter can follow the meaning while
+      still delivering the English lines verbatim; no English wording or
+      factual claim was altered.
+    files_touched:
+      - docs/demo-video-script.md
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human reviewed each translation against the English source to keep
+      project facts (counts, scores, thresholds, reason codes) faithful;
+      no source, prompt, requirement, or invariant changed.
+    decision: approved
+    notes: Documentation-only change; presentation aid only.
