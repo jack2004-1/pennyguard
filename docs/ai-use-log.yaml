@@ -237,3 +237,25 @@ entries:
       no source, prompt, requirement, or invariant changed.
     decision: approved
     notes: Documentation-only change; presentation aid only.
+
+  - id: AU-012
+    timestamp: "2026-11-24T21:30:00+08:00"
+    actor: human
+    tool: demo-script revision
+    model: none
+    task: >-
+      Split segment 5 of the demo script into eight ordered sub-steps
+      (5.1-5.8), each stating which file tab to open and which part of the
+      English line to deliver, so the presenter knows when to switch tabs;
+      added bug-diary.md to the pre-recording open-file checklist.
+    files_touched:
+      - docs/demo-video-script.md
+      - docs/ai-use-log.yaml
+    intervention: >-
+      Human kept the governance evidence mapping unchanged (AGENTS, Prompt,
+      permissions, CI gates, AI-use log, transcript, review memo, bug diary)
+      and only reorganized the on-screen navigation; no source, prompt,
+      requirement, or invariant changed.
+    decision: approved
+    notes: Documentation-only change; presentation aid only; demo script is
+      kept locally and in the repo but excluded from the delivery zip.

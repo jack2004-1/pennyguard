@@ -69,7 +69,7 @@ echo $env:LLM_API_KEY
 - `docs/req/requirements.yaml`
 - `docs/architecture/trace-matrix.md`
 - `AGENTS.md`、`Prompt.md`
-- `docs/ai-use-log.yaml`、`docs/review-memo.md`
+- `docs/ai-use-log.yaml`、`docs/review-memo.md`、`docs/bug-diary.md`
 - `transcripts/60392800-YiyangBU.md`
 - `.opencode/permissions.jsonc`
 - `.github/workflows/ci.yml`、`scripts/` 文件夹
@@ -229,25 +229,125 @@ echo $env:LLM_API_KEY
 
 ## 第 5 段｜agent 治理与人工监督（7:40–9:00）
 
+这一段按 **5.1 → 5.8** 的顺序走，**每一小步先切到对应文件标签，再念那一句英文**。不要一口气把八个标签全点开，讲到哪个切哪个。
+
+### 5.1 agent 的定位与入口（先切 `AGENTS.md`）
+
 **【操作】**
-- 依次切标签：`AGENTS.md` → `Prompt.md` → `docs/ai-use-log.yaml` → `docs/review-memo.md` → `transcripts/60392800-YiyangBU.md` → `.opencode/permissions.jsonc` → `.github/workflows/ci.yml` → `scripts/` 文件夹。
+- 鼠标在左侧资源管理器点 `AGENTS.md`，编辑区停在文件最开头的标题行；
+- 向下滚动到第 4 节 `Read / modify / freeze scope`，停在 `Frozen` 那一小段。
 
 **【英文讲稿】**
-> "The coding agent is a supervised assistant, not an unattended author. `AGENTS.md` is its single entry point; `Prompt.md` instructs it to produce a plan and stop for human approval before any code. The permission model defaults to no read and no write; every allowed path is an explicit whitelist. Guardrail, budget policy, and permission and rules files are frozen paths that need an ADR and human approval to change."
+> "The coding agent is a supervised assistant, not an unattended author. `AGENTS.md` is its single entry point."
 
-**【中文意思】**：写代码的 agent 是受监督的助手，不是无人看管的作者。`AGENTS.md` 是它唯一的入口；`Prompt.md` 要求它先出方案、在写任何代码前停下来等人工批准。权限模型默认不可读、不可写，所有放行路径都是显式白名单。护栏、预算策略以及权限和规则文件都是冻结路径，要改动必须有 ADR 并经人工批准。
+**【中文意思】**：写代码的 agent 是受监督的助手，不是无人看管的作者。`AGENTS.md` 是它唯一的入口文件。
 
-> "The supervision evidence has five parts. A plan gate: no source code until the human approved traceability, contracts, scope boundary, and negative-test coverage. Six CI blocking gates: test approval, static analysis, schema, semantic evaluation, regression, and AI-use log freshness. An AI-use log: every code or prompt change appends an entry; a change touching `src/` or `prompts/` without a log update is blocked. An annotated transcript across six stages: requirements classification, architecture candidate generation and evaluation, pre-code plan approval, build, verification compliance, and revision on test evidence, marked with APPROVED, REDIRECTED, REJECTED, INTERRUPTED, and QUESTIONED."
+**【提示】**
+- 指标题里的 "single entry point"；
+- 指 `Frozen` 小节里列出的护栏、预算策略、权限和规则文件。
 
-**【中文意思】**：监督证据分五部分。方案门禁：在人工批准可追溯性、接口契约、范围边界和负面测试覆盖之前，不写源码。六道 CI 阻断门禁：测试批准、静态分析、结构规范、语义评估、回归测试、AI 使用日志新鲜度。AI 使用日志：每次代码或提示词改动都追加一条记录；改动触及 `src/` 或 `prompts/` 却没更新日志，会被阻断。一份跨六个阶段的标注记录：需求分类、架构候选生成与评估、写码前方案批准、构建、验证合规、按测试证据修订，标注有 APPROVED（批准）、REDIRECTED（改向）、REJECTED（拒绝）、INTERRUPTED（打断）、QUESTIONED（存疑）。
+### 5.2 计划门禁（切到 `Prompt.md`）
 
+**【操作】**
+- 点标签切到 `Prompt.md`；
+- 指 `Step 1 — Produce an execution plan (stop here for approval)` 这一行；
+- 再快速扫一眼 `Step 2`、`Step 3`、`Step 4` 里的 human gate，以及底部 `Hard stop conditions`。
+
+**【英文讲稿】**
+> "`Prompt.md` instructs it to produce a plan and stop for human approval before any code."
+
+**【中文意思】**：`Prompt.md` 要求它先拿出一份方案，在写任何代码之前先停下来，等人工批准。
+
+**【提示】**
+- 指正文里的 "stop" 和 "Wait for the human to approve" 字样；
+- 强调：没批准之前不写源码。
+
+### 5.3 权限模型与冻结路径（切到 `.opencode/permissions.jsonc`）
+
+**【操作】**
+- 点标签切到 `.opencode/permissions.jsonc`；
+- 指顶部 `"default": { "read": false, "write": false }`；
+- 指 `roles` 下面 plan / coding / verification 三个角色各自的读写白名单；
+- 指 `frozen_paths` 列表。
+
+**【英文讲稿】**
+> "The permission model defaults to no read and no write; every allowed path is an explicit whitelist. Guardrail, budget policy, and permission and rules files are frozen paths that need an ADR and human approval to change."
+
+**【中文意思】**：权限模型默认不可读、不可写，所有放行路径都是显式写进白名单的。护栏、预算策略以及权限和规则文件属于冻结路径，要改动必须有一份 ADR 并经过人工批准。
+
+**【提示】**
+- 指 `GR-01`（不在白名单内的路径一律拒绝）和 `GR-02`（冻结路径任何 agent 角色都不能写）。
+
+### 5.4 六道 CI 阻断门禁（切到 `.github/workflows/ci.yml`，再展开 `scripts/`）
+
+**【操作】**
+- 点标签切到 `.github/workflows/ci.yml`，从上往下依次指六个 `Gate` 名称；
+- 然后在左侧展开 `scripts/` 文件夹，点一下里面的五个门禁脚本，让评委看到脚本实体。
+
+**【英文讲稿】**
+> "Six CI blocking gates: test approval, static analysis, schema, semantic evaluation, regression, and AI-use log freshness."
+
+**【中文意思】**：有六道 CI 阻断门禁：测试批准配对、静态分析（编译/依赖/边界）、需求结构规范、语义评估回放、回归测试，以及 AI 使用日志新鲜度。
+
+**【提示】** 六个 Gate 对应关系，念的时候可以对一下：
+- Gate 1 — Test approval pairing check（测试批准配对）
+- Gate 2 — Static analysis（静态分析 + 边界检查）
+- Gate 3 — Requirements schema validation（结构规范）
+- Gate 4 — Semantic evaluation replay（语义评估）
+- Gate 5 — Regression suite（回归测试）
+- Gate 6 — AI-use log freshness（日志新鲜度）
+
+### 5.5 AI 使用日志（切到 `docs/ai-use-log.yaml`）
+
+**【操作】**
+- 点标签切到 `docs/ai-use-log.yaml`；
+- 随便指一条 `AU-` 条目，展开看里面的 `files_touched`、`intervention`、`decision` 三个字段。
+
+**【英文讲稿】**
+> "An AI-use log: every code or prompt change appends an entry; a change touching `src/` or `prompts/` without a log update is blocked."
+
+**【中文意思】**：每次改代码或提示词都要在日志里追加一条记录；如果改动触及 `src/` 或 `prompts/` 却没更新日志，门禁会把它拦下。
+
+**【提示】** 这里正好对应 5.4 里的 Gate 6。
+
+### 5.6 标注会话记录（切到 `transcripts/60392800-YiyangBU.md`）
+
+**【操作】**
+- 点标签切到 `transcripts/60392800-YiyangBU.md`；
+- 先指顶部的标注图例：`APPROVED` / `REDIRECTED` / `REJECTED` / `INTERRUPTED` / `QUESTIONED`；
+- 再滚到下面的六阶段表格，逐行指阶段名称。
+
+**【英文讲稿】**
+> "An annotated transcript across six stages: requirements classification, architecture candidate generation and evaluation, pre-code plan approval, build, verification compliance, and revision on test evidence, marked with APPROVED, REDIRECTED, REJECTED, INTERRUPTED, and QUESTIONED."
+
+**【中文意思】**：一份跨六个阶段的标注会话记录：需求分类、架构候选生成与评估、写码前方案批准、构建、验证合规、按测试证据修订；每条都标了 APPROVED（批准）、REDIRECTED（改向）、REJECTED（拒绝）、INTERRUPTED（打断）、QUESTIONED（存疑）。
+
+**【提示】** 六阶段顺序：需求分类 → 架构候选评估 → 写码前批准 → 构建 → 验证合规 → 按证据修订。
+
+### 5.7 评审 memo（切到 `docs/review-memo.md`，一句带过）
+
+**【操作】**
+- 点标签切到 `docs/review-memo.md`；
+- 指 `MEMO-001` 和 `MEMO-002` 末尾的 `Verdict: APPROVE`。
+
+**【中文意思】**：每一轮改动都有一份评审 memo，记录规格对齐、架构对齐、代码与测试质量、安全和效率，最后给出 APPROVE / CHANGES REQUIRED / REJECT 裁决；本项目两份 memo 都是 APPROVE。
+
+**【提示】** 这一步不用展开长讲，让评委看到有逐轮评审记录即可。
+
+### 5.8 人工抓到的问题（切到 `docs/bug-diary.md`）
+
+**【操作】**
+- 点标签切到 `docs/bug-diary.md`（如果某个缺陷在 transcript 里讲过，也可以切回 transcript 对应条目）；
+- 逐条指六个缺陷记录。
+
+**【英文讲稿】**
 > "Finally, here are issues the human caught that the agent did not flag on its own: a plain-scalar colon that broke YAML parsing; an integer/string schema mismatch; an unmatched bracket visible only at collection; native exceptions bypassing the degradation contract; the CLI `SystemExit` contract; and a lexicon synonym gap that was fixed in the fallback table rather than by relaxing the whitelist."
 
 **【中文意思】**：最后，这些是人工发现、agent 自己没有标出的问题：纯标量里的冒号导致 YAML 解析失败；整数与字符串的模式不匹配；只有在收集阶段才暴露的括号不配对；原生异常绕过了降级契约；CLI 的 `SystemExit` 契约；以及一处词典同义词缺口——最终是在兜底表里修复，而不是放宽白名单。
 
 **【提示】**
 - 讲清两类 AI 不要混淆：写代码的 coding agent（被监督、被记录）≠ 产品里那个可选的运行时 LLM（被护栏约束）；
-- 指 transcript 里的介入标注和那六类人工抓到的问题。
+- 指 transcript 里的介入标注和这六类人工抓到的问题。
 
 ## 第 6 段｜债务、风险、收尾（9:00–9:30）
 
